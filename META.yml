@@ -1,0 +1,22 @@
+---
+name: Test-Ping
+version: 0.04
+author:
+  - 'Sawyer X <xsawyerx@cpan.org>'
+abstract: Testing pings using Net::Ping
+license: perl
+resources:
+  license: http://dev.perl.org/licenses/
+requires:
+  Net::Ping: 2.33
+  Test::Builder: 0.86
+build_requires:
+  Test::More: 0
+provides:
+  Test::Ping:
+    file: lib/Test/Ping.pm
+    version: 0.04
+generated_by: Module::Build version 0.280801
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.2.html
+  version: 1.2
