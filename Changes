@@ -1,5 +1,21 @@
 Revision history for Test-Ping
 
+0.05    26.04.09
+        some POD changes and subroutine returns to keep up with perlcritic
+        added -T to tests
+        added 03-icmp.t
+        added 04-object.t and _ping_object()
+        introducing Tie::Scalar to replace _update_variables()
+        added Test::Ping::Ties::PROTO.pm
+        removed t/02-variables.t
+        updated POD
+        removed pos_bug_net_ping.t - it's not a bug
+
+0.04    24.04.09
+        added test for possible bug in Net::Ping
+        got it stable
+        removed BIND and PORT support for now
+        
 0.03    22.04.09
         separated variable tests to a different file
         added TIMEOUT, PORT, BIND, SOURCE_VERIFY, SERVICE_CHECK, TCP_SERVICE_CHECK

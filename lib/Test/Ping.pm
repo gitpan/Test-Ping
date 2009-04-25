@@ -1,24 +1,24 @@
 package Test::Ping;
+use Test::Ping::Ties::PROTO;
 
-use warnings;
 use strict;
+use warnings;
 
 my  $CLASS         = __PACKAGE__;
 my  $HASHPATH      = '_net-ping';
 my  $OBJPATH       = __PACKAGE__->builder->{'_net-ping_object'};
 my  $method_ignore = '__NONE';
 our @EXPORT        = qw( ping_ok );
-our $VERSION       = '0.04';
+our $VERSION       = '0.05';
 
 # Net::Ping variables
-# took the defaults, just in case
-our $PROTO             = 'tcp';
-#our $PORT              = 7;     # echo port, default
-#our $BIND              = q{};   # won't be used for now
-our $TIMEOUT           = 5;
-our $SOURCE_VERIFY     = 1;
-our $SERVICE_CHECK     = 0;
-our $TCP_SERVICE_CHECK = 0;     # deprecated, but still, why not
+our $PROTO;
+our $PORT;
+our $BIND;
+our $TIMEOUT;
+our $SOURCE_VERIFY;
+our $SERVICE_CHECK;
+our $TCP_SERVICE_CHECK;
 
 BEGIN {
     use base 'Test::Builder::Module';
@@ -26,6 +26,8 @@ BEGIN {
 
     __PACKAGE__->builder
                ->{'_net-ping_object'} = Net::Ping->new($PROTO);
+
+    tie $PROTO, 'Test::Ping::Ties::PROTO';
 }
 
 sub _update_variables {
@@ -74,6 +76,7 @@ sub _update_variables {
         }
     }
 
+    return 1;
 }
 
 sub ping_ok {
@@ -84,6 +87,8 @@ sub ping_ok {
 
     my $alive = $pinger->ping( $host, $TIMEOUT );
     $tb->ok( $alive, $name );
+
+    return 1;
 }
 
 sub _has_var_ok {
@@ -91,6 +96,18 @@ sub _has_var_ok {
     my $tb = $CLASS->builder;
     _update_variables($tb);
     $tb->is_eq( $tb->{$HASHPATH}->{$var_name}, $var_value, $name );
+
+    return 1;
+}
+
+sub _ping_object {
+    my $obj = shift || q{};
+
+    if ( ref $obj eq 'Net::Ping' ) {
+        $OBJPATH = $obj;
+    }
+
+    return $OBJPATH;
 }
 
 END { $OBJPATH->close(); }
@@ -105,7 +122,7 @@ Test::Ping - Testing pings using Net::Ping
 
 =head1 VERSION
 
-Version 0.04
+Version 0.05
 
 =head1 SYNOPSIS
 
@@ -117,7 +134,7 @@ This module helps test pings using Net::Ping
     ping_ok( $host, "able to ping $host" );
     ...
 
-=head1 FUNCTIONS
+=head1 SUBROUTINES/METHODS
 
 =head2 ping_ok( $host, $test )
 
@@ -129,13 +146,15 @@ ping_ok
 
 =head1 SUPPORTED VARIABLES
 
-Currently some variables are suppose to be implemented but there are still no test cases, and until there are test cases (which is exactly what I'm working on right now), nothing should be assumed as supported. Either wait, write a test or try it out.
+Only variables which have tests would be noted as supported. Tests is actually what I'm working on right now.
+
+=head2 PROTO
+
+Important to note: setting this will reset the object and everything it's using back to defaults. Why? Because that's how it works, and I don't intend to bypass it - if at all - until a much later stage.
 
 =head1 INTEND-TO-SUPPORT VARIABLES
 
 These are variables I intend to support, so stay tuned or just send a patch.
-
-=head2 PROTO
 
 =head2 TIMEOUT
 
@@ -149,17 +168,17 @@ These are variables I intend to support, so stay tuned or just send a patch.
 
 =head2 PORT
 
-There is a possible bug in Net::Ping, in which if you change the port, the subsequent test results return bad. I sent a bug report with a test case to Net::Ping. Hopefully they will reply soon (either with a patch, a fix, or a reason why this isn't really a bug) and as soon as that happens, I'll update Test::Ping and the POD.
-
 =head2 BIND
 
-=head1 INTERNAL FUNCTIONS
+=head1 INTERNAL METHODS
 
 =head2 _update_variables($tb)
 
 Updates the internal variables, used by Net::Ping.
 
 Gets the test builder object, returns nothing.
+
+Soon to be deprecated.
 
 =head2 _has_var_ok( $var_name, $var_value, $description )
 
@@ -170,8 +189,24 @@ This is used to debug the actual module, if you wanna make sure it works.
     use Test::More tests => 1;
     use Test::Ping;
 
-    $Test::Ping::PROT = 'icmp';
-    _has_var_ok( 'PROT', 'icmp', 'has correct protocol' )
+    $Test::Ping::PROTO = 'icmp';
+    _has_var_ok( 'PROTO', 'icmp', 'has correct protocol' )
+
+At a later stage, hopefull as soon as possible, this will actually run this:
+
+    is( Test::Ping->_ping_object()->{'proto'}, 'icmp', 'has correct protocol' )
+
+However, you'll still be able to use the first syntax.
+
+For _ping_object() method, keep reading.
+
+=head2 _ping_object
+
+When debugging behavior, fetching an internal object from a producedural module can be a bit difficult (especially when it has base inheritence with another one).
+
+This method allows you (or me) to fetch the actual Net::Ping object from Test::Ping. It eases testing and assurance.
+
+This is used by the Tie functions to set the variables for the object for you.
 
 =head1 AUTHOR
 
