@@ -1,4 +1,4 @@
-package Test::Ping::Ties::PROTO;
+package Test::Ping::Ties::TIMEOUT;
 
 use strict;
 use warnings;
@@ -6,15 +6,14 @@ use warnings;
 use Net::Ping;
 use Tie::Scalar;
 
-our $VERSION = '0.03';
+our $VERSION = '0.01';
 
-sub TIESCALAR { return bless {}, shift;    }
-sub FETCH     { return $Test::Ping::PROTO; }
+sub TIESCALAR { return bless {}, shift;      }
+sub FETCH     { return $Test::Ping::TIMEOUT; }
 
 sub STORE {
     Test::Ping->_ping_object(
-        Net::Ping->new( $_[1] ),
-        $Test::Ping::TIMEOUT
+        Net::Ping->new( $Test::Ping::PROTO, $_[1] )
     );
 }
 
@@ -24,11 +23,11 @@ __END__
 
 =head1 NAME
 
-Test::Ping::Ties::PROTO - Protocol Tie variable to Test::Ping
+Test::Ping::Ties::TIMEOUT - Timeout Tie variable to Test::Ping
 
 =head1 VERSON
 
-Version 0.03
+Version 0.01
 
 =head1 DESCRIPTION
 

@@ -1,6 +1,6 @@
 ---
 name: Test-Ping
-version: 0.05
+version: 0.06
 author:
   - 'Sawyer X <xsawyerx@cpan.org>'
 abstract: Testing pings using Net::Ping
@@ -15,11 +15,14 @@ build_requires:
 provides:
   Test::Ping:
     file: lib/Test/Ping.pm
-    version: 0.05
+    version: 0.06
   Test::Ping::Ties::PROTO:
     file: lib/Test/Ping/Ties/PROTO.pm
-    version: 0.02
-generated_by: Module::Build version 0.280801
+    version: 0.03
+  Test::Ping::Ties::TIMEOUT:
+    file: lib/Test/Ping/Ties/TIMEOUT.pm
+    version: 0.01
+generated_by: Module::Build version 0.32
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.2.html
   version: 1.2

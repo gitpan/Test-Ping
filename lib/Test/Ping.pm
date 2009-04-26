@@ -1,15 +1,15 @@
 package Test::Ping;
 use Test::Ping::Ties::PROTO;
+use Test::Ping::Ties::TIMEOUT;
 
 use strict;
 use warnings;
 
 my  $CLASS         = __PACKAGE__;
-my  $HASHPATH      = '_net-ping';
 my  $OBJPATH       = __PACKAGE__->builder->{'_net-ping_object'};
 my  $method_ignore = '__NONE';
-our @EXPORT        = qw( ping_ok );
-our $VERSION       = '0.05';
+our @EXPORT        = qw( ping_ok ping_not_ok );
+our $VERSION       = '0.06';
 
 # Net::Ping variables
 our $PROTO;
@@ -30,60 +30,10 @@ BEGIN {
     tie $PROTO, 'Test::Ping::Ties::PROTO';
 }
 
-sub _update_variables {
-    my $tb    = shift;
-    my $EMPTY = q{};
-
-    my %methods = (
-#        BIND      => { value => $BIND,    method => 'bind'         },
-#        PORT      => { value => $PORT,    method => 'port_number'  },
-        PROTO     => { value => $PROTO,   method => $method_ignore },
-        TIMEOUT   => { value => $TIMEOUT, method => $method_ignore },
-
-        SOURCE_VERIFY     => {
-            value  => $SOURCE_VERIFY,
-            method => 'source_verify',
-        },
-
-        SERVICE_CHECK     => {
-            value  => $SERVICE_CHECK,
-            method => 'service_check',
-        },
-
-        TCP_SERVICE_CHECK => {
-            value  => $TCP_SERVICE_CHECK,
-            method => 'tcp_service_check',
-        },
-
-    );
-
-    foreach my $var ( keys %methods ) {
-        # check if var has changed
-        my $old_var = $tb->{$HASHPATH}->{$var} || $EMPTY;
-        my $new_var = $methods{$var}->{'value'} || $EMPTY;
-
-        if ( $new_var ne $old_var ) {
-            # var has changed
-            my $run_method = $methods{$var}->{'method'};
-
-            # update the object
-            if ( $run_method ne $method_ignore ) {
-                $OBJPATH->$run_method($new_var);
-            }
-
-            # update the variables hash
-            $tb->{$HASHPATH}->{$var} = $new_var;
-        }
-    }
-
-    return 1;
-}
-
 sub ping_ok {
     my ( $host, $name ) = @_;
-    my $tb = $CLASS->builder;
+    my $tb     = $CLASS->builder;
     my $pinger = $OBJPATH;
-    _update_variables($tb);
 
     my $alive = $pinger->ping( $host, $TIMEOUT );
     $tb->ok( $alive, $name );
@@ -91,17 +41,26 @@ sub ping_ok {
     return 1;
 }
 
-sub _has_var_ok {
-    my ( $var_name, $var_value, $name ) = @_;
-    my $tb = $CLASS->builder;
-    _update_variables($tb);
-    $tb->is_eq( $tb->{$HASHPATH}->{$var_name}, $var_value, $name );
+sub ping_not_ok {
+    my ( $host, $name ) = @_;
+    my $tb     = $CLASS->builder;
+    my $pinger = $OBJPATH;
+
+    my $alive = $pinger->ping( $host, $TIMEOUT );
+    $tb->ok( !$alive, $name );
 
     return 1;
 }
 
+sub _has_var_ok {
+    my ( $var_name, $var_value, $name ) = @_;
+    my $tb = $CLASS->builder;
+    $tb->is_eq( $OBJPATH->{$var_name}, $var_value, $name );
+    return 1;
+}
+
 sub _ping_object {
-    my $obj = shift || q{};
+    my $obj = $_[1] || $_[0] || q{};
 
     if ( ref $obj eq 'Net::Ping' ) {
         $OBJPATH = $obj;
@@ -122,7 +81,7 @@ Test::Ping - Testing pings using Net::Ping
 
 =head1 VERSION
 
-Version 0.05
+Version 0.06
 
 =head1 SYNOPSIS
 
@@ -131,7 +90,11 @@ This module helps test pings using Net::Ping
     use Test::More tests => 1;
     use Test::Ping;
 
-    ping_ok( $host, "able to ping $host" );
+    my $good_host = '127.0.0.1';
+    my $bad_host  = '1.1.1.1;
+
+    ping_ok(     $good_host, "able to ping $good_host" );
+    ping_not_ok( $bad_host,  "can't ping $bad_host"    );
     ...
 
 =head1 SUBROUTINES/METHODS
@@ -140,9 +103,15 @@ This module helps test pings using Net::Ping
 
 Checks if a host replies to ping correctly.
 
+=head2 ping_not_ok( $host, $test )
+
+Does the exact opposite of ping_ok().
+
 =head1 EXPORT
 
 ping_ok
+
+ping_not_ok
 
 =head1 SUPPORTED VARIABLES
 
@@ -150,13 +119,15 @@ Only variables which have tests would be noted as supported. Tests is actually w
 
 =head2 PROTO
 
-Important to note: setting this will reset the object and everything it's using back to defaults. Why? Because that's how it works, and I don't intend to bypass it - if at all - until a much later stage.
+Warning: setting this will reset the object and everything it's using back to defaults. Why? Because that's how it works, and I don't intend to bypass it - if at all - until a much later stage.
+
+=head2 TIMEOUT
+
+Warning: setting this will reset the object and everything it's using back to defaults. Why? Because that's how it works, and I don't intend to bypass it - if at all - until a much later stage.
 
 =head1 INTEND-TO-SUPPORT VARIABLES
 
 These are variables I intend to support, so stay tuned or just send a patch.
-
-=head2 TIMEOUT
 
 =head2 SOURCE_VERIFY
 
@@ -172,14 +143,6 @@ These are variables I intend to support, so stay tuned or just send a patch.
 
 =head1 INTERNAL METHODS
 
-=head2 _update_variables($tb)
-
-Updates the internal variables, used by Net::Ping.
-
-Gets the test builder object, returns nothing.
-
-Soon to be deprecated.
-
 =head2 _has_var_ok( $var_name, $var_value, $description )
 
 Gets a variable name to test, what to test against and the name of the test. Runs an actual test using Test::Builder.
@@ -189,16 +152,12 @@ This is used to debug the actual module, if you wanna make sure it works.
     use Test::More tests => 1;
     use Test::Ping;
 
+    # Test::Ping calls the protocol variable 'PROTO',
+    # but Net::Ping calls it internally (in the hash) 'proto'
+    # this is checking against Net::Ping specifically
+
     $Test::Ping::PROTO = 'icmp';
-    _has_var_ok( 'PROTO', 'icmp', 'has correct protocol' )
-
-At a later stage, hopefull as soon as possible, this will actually run this:
-
-    is( Test::Ping->_ping_object()->{'proto'}, 'icmp', 'has correct protocol' )
-
-However, you'll still be able to use the first syntax.
-
-For _ping_object() method, keep reading.
+    _has_var_ok( 'proto', 'icmp', 'Net::Ping has correct protocol variable' )
 
 =head2 _ping_object
 
