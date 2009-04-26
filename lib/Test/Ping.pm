@@ -1,4 +1,5 @@
 package Test::Ping;
+use Test::Ping::Ties::PORT;
 use Test::Ping::Ties::PROTO;
 use Test::Ping::Ties::TIMEOUT;
 
@@ -9,7 +10,7 @@ my  $CLASS         = __PACKAGE__;
 my  $OBJPATH       = __PACKAGE__->builder->{'_net-ping_object'};
 my  $method_ignore = '__NONE';
 our @EXPORT        = qw( ping_ok ping_not_ok );
-our $VERSION       = '0.06';
+our $VERSION       = '0.07';
 
 # Net::Ping variables
 our $PROTO;
@@ -27,7 +28,9 @@ BEGIN {
     __PACKAGE__->builder
                ->{'_net-ping_object'} = Net::Ping->new($PROTO);
 
-    tie $PROTO, 'Test::Ping::Ties::PROTO';
+    tie $PORT,    'Test::Ping::Ties::PORT';
+    tie $PROTO,   'Test::Ping::Ties::PROTO';
+    tie $TIMEOUT, 'Test::Ping::Ties::TIMEOUT';
 }
 
 sub ping_ok {
@@ -81,13 +84,13 @@ Test::Ping - Testing pings using Net::Ping
 
 =head1 VERSION
 
-Version 0.06
+Version 0.07
 
 =head1 SYNOPSIS
 
 This module helps test pings using Net::Ping
 
-    use Test::More tests => 1;
+    use Test::More tests => 2;
     use Test::Ping;
 
     my $good_host = '127.0.0.1';
@@ -96,6 +99,10 @@ This module helps test pings using Net::Ping
     ping_ok(     $good_host, "able to ping $good_host" );
     ping_not_ok( $bad_host,  "can't ping $bad_host"    );
     ...
+
+=head1 DESCRIPTION
+
+Using this module you do not have to work with an object, but can instead use actual procedural testing functions, which is cleaner and more straight forward for testing purposes. This module keeps track of the object for you, starting and closing it and provides a nifty way of testing for pings.
 
 =head1 SUBROUTINES/METHODS
 
@@ -117,17 +124,25 @@ ping_not_ok
 
 Only variables which have tests would be noted as supported. Tests is actually what I'm working on right now.
 
+PROTO, TIMEOUT and PORT only change the values in the object hash, and don't run any methods or recreate the object. That's what the Net::Ping testing suite does and that's the spec I'm following here.
+
 =head2 PROTO
 
-Warning: setting this will reset the object and everything it's using back to defaults. Why? Because that's how it works, and I don't intend to bypass it - if at all - until a much later stage.
+Changes the 'proto' hash value.
 
 =head2 TIMEOUT
 
-Warning: setting this will reset the object and everything it's using back to defaults. Why? Because that's how it works, and I don't intend to bypass it - if at all - until a much later stage.
+Changes the 'timeout' hash value.
+
+=head2 PORT
+
+Changes the 'port_num' hash value.
 
 =head1 INTEND-TO-SUPPORT VARIABLES
 
 These are variables I intend to support, so stay tuned or just send a patch.
+
+Generally speaking, variables are added whenever there is a test they have to pass.
 
 =head2 SOURCE_VERIFY
 
@@ -136,8 +151,6 @@ These are variables I intend to support, so stay tuned or just send a patch.
 =head2 TCP_SERVICE_CHECK
 
 =head1 DISABLED TILL FURTHER NOTICE VARIABLES
-
-=head2 PORT
 
 =head2 BIND
 
@@ -154,18 +167,41 @@ This is used to debug the actual module, if you wanna make sure it works.
 
     # Test::Ping calls the protocol variable 'PROTO',
     # but Net::Ping calls it internally (in the hash) 'proto'
+    # (this is documented above under PROTO)
     # this is checking against Net::Ping specifically
 
     $Test::Ping::PROTO = 'icmp';
-    _has_var_ok( 'proto', 'icmp', 'Net::Ping has correct protocol variable' )
+    Test::Ping::_has_var_ok(
+        'proto',
+        'icmp',
+        'Net::Ping has correct protocol variable',
+    );
 
 =head2 _ping_object
 
-When debugging behavior, fetching an internal object from a producedural module can be a bit difficult (especially when it has base inheritence with another one).
+When debugging behavior, fetching an internal object from a procedural module can be a bit difficult (especially when it has base inheritance with another one).
 
 This method allows you (or me) to fetch the actual Net::Ping object from Test::Ping. It eases testing and assurance.
 
 This is used by the Tie functions to set the variables for the object for you.
+
+    use Test::Ping;
+    use Data::Dumper;
+
+    print 'Object internals: ' . Dumper( Test::Ping::_ping_object() );
+
+Or you could also change the Net::Ping object to one of your own:
+
+    use Test::Ping;
+    use Net::Ping;
+
+    Test::Ping::_ping_object( Net::Ping->new(@opts) );
+
+However, you should be warned. I test for a Net::Ping object so trying to pass other objects will fail. If anyone needs this changed or any reason, contact me and I'll consider it.
+
+=head1 DEPENDENCIES
+
+This module uses Net::Ping.
 
 =head1 AUTHOR
 

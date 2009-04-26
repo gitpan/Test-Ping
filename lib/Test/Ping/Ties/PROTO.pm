@@ -6,17 +6,11 @@ use warnings;
 use Net::Ping;
 use Tie::Scalar;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
-sub TIESCALAR { return bless {}, shift;    }
-sub FETCH     { return $Test::Ping::PROTO; }
-
-sub STORE {
-    Test::Ping->_ping_object(
-        Net::Ping->new( $_[1] ),
-        $Test::Ping::TIMEOUT
-    );
-}
+sub TIESCALAR { return bless {}, shift;                        }
+sub FETCH     { return Test::Ping->_ping_object->{'proto'};    }
+sub STORE     { Test::Ping->_ping_object()->{'proto'} = $_[1]; }
 
 1;
 
@@ -26,9 +20,9 @@ __END__
 
 Test::Ping::Ties::PROTO - Protocol Tie variable to Test::Ping
 
-=head1 VERSON
+=head1 VERSION
 
-Version 0.03
+Version 0.04
 
 =head1 DESCRIPTION
 
