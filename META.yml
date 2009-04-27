@@ -1,6 +1,6 @@
 ---
 name: Test-Ping
-version: 0.07
+version: 0.08
 author:
   - 'Sawyer X <xsawyerx@cpan.org>'
 abstract: Testing pings using Net::Ping
@@ -16,7 +16,10 @@ build_requires:
 provides:
   Test::Ping:
     file: lib/Test/Ping.pm
-    version: 0.07
+    version: 0.08
+  Test::Ping::Ties::HIRES:
+    file: lib/Test/Ping/Ties/HIRES.pm
+    version: 0.01
   Test::Ping::Ties::PORT:
     file: lib/Test/Ping/Ties/PORT.pm
     version: 0.01

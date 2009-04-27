@@ -1,6 +1,8 @@
 package Test::Ping;
+
 use Test::Ping::Ties::PORT;
 use Test::Ping::Ties::PROTO;
+use Test::Ping::Ties::HIRES;
 use Test::Ping::Ties::TIMEOUT;
 
 use strict;
@@ -9,13 +11,14 @@ use warnings;
 my  $CLASS         = __PACKAGE__;
 my  $OBJPATH       = __PACKAGE__->builder->{'_net-ping_object'};
 my  $method_ignore = '__NONE';
-our @EXPORT        = qw( ping_ok ping_not_ok );
-our $VERSION       = '0.07';
+our @EXPORT        = qw( ping_ok ping_not_ok create_ping_object_ok );
+our $VERSION       = '0.08';
 
 # Net::Ping variables
-our $PROTO;
 our $PORT;
 our $BIND;
+our $PROTO;
+our $HIRES;
 our $TIMEOUT;
 our $SOURCE_VERIFY;
 our $SERVICE_CHECK;
@@ -30,6 +33,7 @@ BEGIN {
 
     tie $PORT,    'Test::Ping::Ties::PORT';
     tie $PROTO,   'Test::Ping::Ties::PROTO';
+    tie $HIRES,   'Test::Ping::Ties::HIRES';
     tie $TIMEOUT, 'Test::Ping::Ties::TIMEOUT';
 }
 
@@ -38,10 +42,10 @@ sub ping_ok {
     my $tb     = $CLASS->builder;
     my $pinger = $OBJPATH;
 
-    my $alive = $pinger->ping( $host, $TIMEOUT );
-    $tb->ok( $alive, $name );
+    my ( $ret, $duration ) = $pinger->ping( $host, $TIMEOUT );
+    $tb->ok( $ret, $name );
 
-    return 1;
+    return ( $ret, $duration );
 }
 
 sub ping_not_ok {
@@ -53,6 +57,19 @@ sub ping_not_ok {
     $tb->ok( !$alive, $name );
 
     return 1;
+}
+
+sub create_ping_object_ok {
+    my @args = @_;
+    my $name = pop @args || q{};
+    my $tb   = $CLASS->builder;
+    $OBJPATH = Net::Ping->new(@args);
+
+    if ($OBJPATH) { 
+        $tb->is_eq( ref $OBJPATH, 'Net::Ping', $name );
+    } else {
+        $tb->ok( 0, $name );
+    }
 }
 
 sub _has_var_ok {
@@ -84,7 +101,7 @@ Test::Ping - Testing pings using Net::Ping
 
 =head1 VERSION
 
-Version 0.07
+Version 0.08
 
 =head1 SYNOPSIS
 
@@ -110,15 +127,23 @@ Using this module you do not have to work with an object, but can instead use ac
 
 Checks if a host replies to ping correctly.
 
+This returns the return value and duration, just like Net::Ping's ping() method.
+
 =head2 ping_not_ok( $host, $test )
 
 Does the exact opposite of ping_ok().
+
+=head2 create_ping_object_ok( @args, $test )
+
+This tries to create a ping object and reports a fail or success. The args that should be sent are whatever args used with Net::Ping.
 
 =head1 EXPORT
 
 ping_ok
 
 ping_not_ok
+
+create_ping_object_ok
 
 =head1 SUPPORTED VARIABLES
 
@@ -138,6 +163,8 @@ Changes the 'timeout' hash value.
 
 Changes the 'port_num' hash value.
 
+=head2 HIRES
+
 =head1 INTEND-TO-SUPPORT VARIABLES
 
 These are variables I intend to support, so stay tuned or just send a patch.
@@ -149,8 +176,6 @@ Generally speaking, variables are added whenever there is a test they have to pa
 =head2 SERVICE_CHECK
 
 =head2 TCP_SERVICE_CHECK
-
-=head1 DISABLED TILL FURTHER NOTICE VARIABLES
 
 =head2 BIND
 
@@ -196,6 +221,14 @@ Or you could also change the Net::Ping object to one of your own:
     use Net::Ping;
 
     Test::Ping::_ping_object( Net::Ping->new(@opts) );
+
+And doing it with tests:
+
+    use Test::More tests => 2;
+    use Test::Ping;
+
+    create_ping_object_ok( 'tcp', 2, 'Creating our own Net::Ping object' );
+    ping_ok( $target, "Yay! We can reach $target" );
 
 However, you should be warned. I test for a Net::Ping object so trying to pass other objects will fail. If anyone needs this changed or any reason, contact me and I'll consider it.
 
