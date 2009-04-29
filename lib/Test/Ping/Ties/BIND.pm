@@ -1,16 +1,17 @@
-package Test::Ping::Ties::TIMEOUT;
+package Test::Ping::Ties::BIND;
 
 use strict;
 use warnings;
 
 use Net::Ping;
 use Tie::Scalar;
+use Carp;
 
-our $VERSION = '0.03';
+our $VERSION = '0.01';
 
-sub TIESCALAR { return bless {}, shift;                          }
-sub FETCH     { return Test::Ping->_ping_object()->{'timeout'};  }
-sub STORE     { Test::Ping->_ping_object()->{'timeout'} = $_[1]; }
+sub TIESCALAR { return bless {}, shift;                    }
+sub FETCH     { carp 'Usage: $p->bind($local_addr)';       }
+sub STORE     { Test::Ping->_ping_object()->bind( $_[1] ); }
 
 1;
 
@@ -18,11 +19,11 @@ __END__
 
 =head1 NAME
 
-Test::Ping::Ties::TIMEOUT - Timeout Tie variable to Test::Ping
+Test::Ping::Ties::BIND - Bind Tie variable to Test::Ping
 
 =head1 VERSION
 
-Version 0.03
+Version 0.01
 
 =head1 DESCRIPTION
 

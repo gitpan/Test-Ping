@@ -1,9 +1,12 @@
 package Test::Ping;
 
+use Test::Ping::Ties::BIND;
 use Test::Ping::Ties::PORT;
 use Test::Ping::Ties::PROTO;
 use Test::Ping::Ties::HIRES;
 use Test::Ping::Ties::TIMEOUT;
+use Test::Ping::Ties::SOURCE_VERIFY;
+use Test::Ping::Ties::SERVICE_CHECK;
 
 use strict;
 use warnings;
@@ -11,8 +14,13 @@ use warnings;
 my  $CLASS         = __PACKAGE__;
 my  $OBJPATH       = __PACKAGE__->builder->{'_net-ping_object'};
 my  $method_ignore = '__NONE';
-our @EXPORT        = qw( ping_ok ping_not_ok create_ping_object_ok );
-our $VERSION       = '0.08';
+our $VERSION       = '0.09';
+our @EXPORT        = qw(
+    ping_ok
+    ping_not_ok
+    create_ping_object_ok
+    create_ping_object_not_ok
+);
 
 # Net::Ping variables
 our $PORT;
@@ -22,19 +30,20 @@ our $HIRES;
 our $TIMEOUT;
 our $SOURCE_VERIFY;
 our $SERVICE_CHECK;
-our $TCP_SERVICE_CHECK;
 
 BEGIN {
     use base 'Test::Builder::Module';
     use Net::Ping;
 
-    __PACKAGE__->builder
-               ->{'_net-ping_object'} = Net::Ping->new($PROTO);
+    __PACKAGE__->builder->{'_net-ping_object'} = Net::Ping->new($PROTO);
 
-    tie $PORT,    'Test::Ping::Ties::PORT';
-    tie $PROTO,   'Test::Ping::Ties::PROTO';
-    tie $HIRES,   'Test::Ping::Ties::HIRES';
-    tie $TIMEOUT, 'Test::Ping::Ties::TIMEOUT';
+    tie $PORT,          'Test::Ping::Ties::PORT';
+    tie $BIND,          'Test::Ping::Ties::BIND';
+    tie $PROTO,         'Test::Ping::Ties::PROTO';
+    tie $HIRES,         'Test::Ping::Ties::HIRES';
+    tie $TIMEOUT,       'Test::Ping::Ties::TIMEOUT';
+    tie $SOURCE_VERIFY, 'Test::Ping::Ties::SOURCE_VERIFY';
+    tie $SERVICE_CHECK, 'Test::Ping::Ties::SERVICE_CHECK';
 }
 
 sub ping_ok {
@@ -72,6 +81,15 @@ sub create_ping_object_ok {
     }
 }
 
+sub create_ping_object_not_ok {
+    my @args = @_;
+    my $name = pop @args || q{};
+    my $tb   = $CLASS->builder;
+    $OBJPATH = Net::Ping->new(@args);
+
+    $tb->ok( !$OBJPATH, $name );
+}
+
 sub _has_var_ok {
     my ( $var_name, $var_value, $name ) = @_;
     my $tb = $CLASS->builder;
@@ -101,7 +119,7 @@ Test::Ping - Testing pings using Net::Ping
 
 =head1 VERSION
 
-Version 0.08
+Version 0.09
 
 =head1 SYNOPSIS
 
@@ -137,6 +155,10 @@ Does the exact opposite of ping_ok().
 
 This tries to create a ping object and reports a fail or success. The args that should be sent are whatever args used with Net::Ping.
 
+=head2 create_ping_object_not_ok( @args, $test )
+
+Tried to create a ping object and attempts to fail. The exactly opposite of the above test.
+
 =head1 EXPORT
 
 ping_ok
@@ -145,11 +167,15 @@ ping_not_ok
 
 create_ping_object_ok
 
+create_ping_object_not_ok
+
 =head1 SUPPORTED VARIABLES
 
-Only variables which have tests would be noted as supported. Tests is actually what I'm working on right now.
+Variables in Test::Ping are tied scalars. Some variables change the values in the object hash while others run methods. This follows the behavior of Net::Ping. Below you will find each support variable and what it changes.
 
-PROTO, TIMEOUT and PORT only change the values in the object hash, and don't run any methods or recreate the object. That's what the Net::Ping testing suite does and that's the spec I'm following here.
+=head2 BIND
+
+Runs the 'bind' method.
 
 =head2 PROTO
 
@@ -165,19 +191,15 @@ Changes the 'port_num' hash value.
 
 =head2 HIRES
 
-=head1 INTEND-TO-SUPPORT VARIABLES
-
-These are variables I intend to support, so stay tuned or just send a patch.
-
-Generally speaking, variables are added whenever there is a test they have to pass.
+Changes the package variable $hires.
 
 =head2 SOURCE_VERIFY
 
+Changes the package variable $source_verify.
+
 =head2 SERVICE_CHECK
 
-=head2 TCP_SERVICE_CHECK
-
-=head2 BIND
+Changes the 'econnrefused' hash value.
 
 =head1 INTERNAL METHODS
 
@@ -213,14 +235,14 @@ This is used by the Tie functions to set the variables for the object for you.
     use Test::Ping;
     use Data::Dumper;
 
-    print 'Object internals: ' . Dumper( Test::Ping::_ping_object() );
+    print 'Object internals: ' . Dumper( Test::Ping->_ping_object() );
 
 Or you could also change the Net::Ping object to one of your own:
 
     use Test::Ping;
     use Net::Ping;
 
-    Test::Ping::_ping_object( Net::Ping->new(@opts) );
+    Test::Ping->_ping_object( Net::Ping->new(@opts) );
 
 And doing it with tests:
 
@@ -234,7 +256,9 @@ However, you should be warned. I test for a Net::Ping object so trying to pass o
 
 =head1 DEPENDENCIES
 
-This module uses Net::Ping.
+This module uses Net::Ping, Tie::Scalar and Carp.
+
+Test::Timer is used in the test suite.
 
 =head1 AUTHOR
 

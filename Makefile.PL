@@ -5,9 +5,11 @@ WriteMakefile
           'NAME' => 'Test::Ping',
           'VERSION_FROM' => 'lib/Test/Ping.pm',
           'PREREQ_PM' => {
+                           'Carp' => 0,
                            'Net::Ping' => '2.33',
                            'Test::Builder' => '0.86',
                            'Test::More' => 0,
+                           'Test::Timer' => '0.05',
                            'Tie::Scalar' => 0
                          },
           'INSTALLDIRS' => 'site',
