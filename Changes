@@ -1,7 +1,13 @@
 Revision history for Test-Ping
 
+0.13    10.02.10
+        repository in META.yml using Module::Build (cpanservice)
+        allowng a longer time gap for a test
+        correcting Changelog
+
 0.12    13.08.09
-        added meta_merge options for bugtracker and repository
+        repository in META.yml using Module::Build (cpanservice)
+        allowng a longer time gap for a test
 
 0.11    02.08.09
         added author tests using Test::XT (thanks Adam Kennedy)
