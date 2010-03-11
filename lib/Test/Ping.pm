@@ -14,7 +14,7 @@ use warnings;
 my  $CLASS         = __PACKAGE__;
 my  $OBJPATH       = __PACKAGE__->builder->{'_net-ping_object'};
 my  $method_ignore = '__NONE';
-our $VERSION       = '0.13';
+our $VERSION       = '0.14';
 our @EXPORT        = qw(
     ping_ok
     ping_not_ok
@@ -93,7 +93,7 @@ sub create_ping_object_not_ok {
 sub _has_var_ok {
     my ( $var_name, $var_value, $name ) = @_;
     my $tb = $CLASS->builder;
-    $tb->is_eq( $OBJPATH->{$var_name}, $var_value, $name );
+    $tb->is_eq( $OBJPATH->{$var_name}, $var_value, $name ); ## no critic
     return 1;
 }
 
@@ -119,7 +119,7 @@ Test::Ping - Testing pings using Net::Ping
 
 =head1 VERSION
 
-Version 0.13
+Version 0.14
 
 =head1 SYNOPSIS
 
